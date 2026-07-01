@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Superviseur OCR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 w-full max-w-sm">
+        <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">Connexion Affichage OCR</h2>
+        
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700">Utilisateur</label>
+                <input type="text" id="username" required 
+                       class="w-full mt-1 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700">Mot de passe</label>
+                <input type="password" id="password" required 
+                       class="w-full mt-1 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <button type="submit" 
+                    class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+                Se connecter
+            </button>
+        </form>
+        
+        <div id="errorMessage" class="mt-4 text-red-500 text-sm text-center hidden p-2 bg-red-50 rounded"></div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:8000";
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMessage');
+
+            // Préparation des données au format attendu par OAuth2PasswordRequestForm
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Stockage du jeton pour les requêtes futures
+                    localStorage.setItem('token', data.access_token);
+                    // Redirection vers l'application
+                    window.location.href = 'index.html';
+                } else {
+                    errorDiv.innerText = "Identifiants incorrects.";
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorDiv.innerText = "Erreur de connexion au serveur.";
+                errorDiv.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

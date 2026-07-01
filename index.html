@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superviseur OCR Pro - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <datalist id="listeCommunes">
+    <option value="Aboumi">
+    <option value="Akiéni">
+    <option value="Akanda">
+    <option value="Bakoumba">
+    <option value="Bitam">
+    <option value="Bongoville">
+    <option value="Booué">
+    <option value="Boumango">
+    <option value="Cocobeach">
+    <option value="Fougamou">
+    <option value="Franceville">
+    <option value="Gamba">
+    <option value="Kango">
+    <option value="Koulamoutou">
+    <option value="Lambaréné">
+    <option value="Lastourville">
+    <option value="Lebamba">
+    <option value="Léconi">
+    <option value="Libreville">
+    <option value="Mabanda">
+    <option value="Makokou">
+    <option value="Malinga">
+    <option value="Mayumba">
+    <option value="Mbigou">
+    <option value="Médouneu">
+    <option value="Mékambo">
+    <option value="Mimongo">
+    <option value="Mitzic">
+    <option value="Moabi">
+    <option value="Moanda">
+    <option value="Mouila">
+    <option value="Mounana">
+    <option value="Ndjolé">
+    <option value="Ndendé">
+    <option value="Ndindi">
+    <option value="Ngouoni">
+    <option value="Ntoum">
+    <option value="Okondja">
+    <option value="Omboué">
+    <option value="Ovan">
+    <option value="Owendo">
+    <option value="Oyem">
+    <option value="Port-Gentil">
+    <option value="Tchibanga">
+</datalist>
+
+    <div id="vueTableau" class="p-8">
+        <div class="max-w-7xl mx-auto">
+            
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">Gestion des affichages</h1>
+                <div class="flex items-center gap-4 bg-white p-2 px-4 rounded-lg border border-slate-200 shadow-sm">
+                    <div>
+                        <p id="userDisplay" class="text-sm font-bold"></p>
+                        <p id="roleDisplay" class="text-xs text-slate-500"></p>
+                    </div>
+                    <button onclick="deconnexion()" class="text-xs bg-red-50 text-red-600 px-3 py-1 rounded hover:bg-red-100 font-bold transition">Déconnexion</button>
+<button id="btnGestionUsers" onclick="ouvrirVueUsers()" class="bg-slate-600 text-white px-3 py-1 rounded text-xs hover:bg-slate-700 transition">Gestion Users</button>                </div>
+            </div>
+            
+            <div id="statsBar" class="grid grid-cols-3 gap-4 mb-6">
+                <div class="p-4 bg-white rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50" onclick="filtrerStatut('tous')">
+                    <p class="text-xs text-slate-500 uppercase font-bold">Total</p>
+                    <p id="statTotal" class="text-2xl font-bold">0</p>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:bg-yellow-50" onclick="filtrerStatut('en_attente')">
+                    <p class="text-xs text-yellow-600 uppercase font-bold">En attente</p>
+                    <p id="statAttente" class="text-2xl font-bold text-yellow-600">0</p>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:bg-green-50" onclick="filtrerStatut('valide')">
+                    <p class="text-xs text-green-600 uppercase font-bold">Validés</p>
+                    <p id="statValide" class="text-2xl font-bold text-green-600">0</p>
+                </div>
+            </div>
+
+            <form id="uploadForm" class="mb-6 p-4 bg-white rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-bold uppercase mb-2">Charger de nouveaux documents</h2>
+                <div class="flex items-center gap-4">
+                    <input type="file" id="fileInput" name="files" multiple accept=".pdf, .jpg, .png" class="text-sm">
+                    <button type="button" onclick="uploaderFichiers()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">Envoyer vers l'OCR</button>
+                </div>
+                <div id="uploadStatus" class="mt-2 text-sm font-bold text-blue-600 italic"></div>
+            </form>
+
+            <div class="mb-6">
+                <input type="text" id="searchInput" placeholder="Recherche rapide..." onkeyup="appliquerFiltres()" class="w-full p-4 border rounded-xl shadow-sm">
+            </div>
+
+            <div class="bg-white rounded-xl shadow overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 uppercase text-xs">
+                        <tr>
+                            <th class="p-3 cursor-pointer hover:bg-slate-200" onclick="trierPar('num_caso')">N° Affichage ↕</th>
+                            <th class="p-3 cursor-pointer hover:bg-slate-200" onclick="trierPar('requerant')">Requérant ↕</th>
+                            <th class="p-3 cursor-pointer hover:bg-slate-200" onclick="trierPar('commune')">Commune ↕</th>
+                            <th class="p-3 cursor-pointer hover:bg-slate-200" onclick="trierPar('parcelle')">Parcelle ↕</th>
+                            <th class="p-3 cursor-pointer hover:bg-slate-200" onclick="trierPar('section')">Section ↕</th>
+                            <th class="p-3">Lieu-dit</th>
+                            <th class="p-3">Upload</th>
+                            <th class="p-3">
+                                <select onchange="filtrerStatut(this.value)" class="bg-transparent font-bold cursor-pointer outline-none">
+                                    <option value="tous">STATUT ↕</option>
+                                    <option value="en attente">En attente</option>
+                                    <option value="valide">Validés</option>
+                                </select>
+                            </th>
+                            <th class="p-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="vueEdition" class="hidden grid grid-cols-2 gap-0 h-screen overflow-hidden">
+        <iframe id="pdfViewer" class="w-full h-full border-r bg-slate-100"></iframe>
+        <div class="p-8 bg-white overflow-y-auto">
+            <h1 class="text-2xl font-bold mb-6">Correction & Validation</h1>
+            <form id="validationForm" class="space-y-4">
+                <input type="hidden" id="currentCasoId" name="caso_id">
+                <input type="hidden" name="validateur" id="validateurInput">
+                <input type="hidden" name="extraction_ocr" id="extractionOcrInput">
+                <div id="fieldsContainer"></div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">Enregistrer</button>
+                <button type="button" onclick="retourTableau()" class="w-full text-slate-500 py-2 hover:underline">Retour</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="vueUsers" class="hidden p-8 max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Gestion des Utilisateurs</h1>
+            <button onclick="retourTableau()" class="text-slate-500">Retour au Dashboard</button>
+        </div>
+
+            <div class="mb-6 p-4 bg-slate-100 rounded-xl">
+                <h2 class="font-bold mb-2">Ajouter un utilisateur</h2>
+                <form id="formAjoutUser" class="flex gap-2">
+                    <input type="text" name="username" placeholder="Username" required class="p-2 border rounded">
+                    <input type="password" name="password" placeholder="Mot de passe" required class="p-2 border rounded">
+                    <select name="role" class="p-2 border rounded">
+                        <option value="correcteur">Correcteur</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Créer</button>
+                </form>
+            </div>
+
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-slate-200">
+                        <th class="p-3">Date Lettre</th>
+                        <th class="p-3">Requérant</th>
+                        <th class="p-3">Parcelle</th>
+                        <th class="p-3">Section</th>
+                        <th class="p-3">Commune</th>
+                        <th class="p-3">Lieu-dit</th>
+                        <th class="p-3">Statut</th>
+                        <th class="p-3">Date Validation</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    </tbody>
+            </table>
+    </div>
+</div>
+
+<script src="main.js"></script>
+
+</body>
+</html>
