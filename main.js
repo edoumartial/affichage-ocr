@@ -123,27 +123,24 @@ function editerDoc(id) {
     document.getElementById('vueEdition').classList.remove('hidden');
     document.getElementById('pdfViewer').src = `${API_URL}/static/${doc.filename}`;
     document.getElementById('currentCasoId').value = doc.id;
-    document.getElementById('extractionOcrInput').value = doc.extraction_ocr || '';
     
     // Décodage du validateur
     try {
         const token = getToken();
         const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-        document.getElementById('validateurInput').value = payload.sub;
+        const validateurInput = document.getElementById('validateurInput');
+        if (validateurInput) validateurInput.value = payload.sub;
     } catch (e) { console.error("Erreur de décodage du token", e); }
     
-    // Configuration des champs pour l'édition
-    // Note : assurez-vous que cette liste contient toutes les colonnes éditables
-
-const champs = ["numero_affichage", "lettre_date", "validated_at", "requerant", "parcelle", "section", "commune", "lieu_dit", "extraction_ocr"];
-    document.getElementById('fieldsContainer').innerHTML = champs.map(col => {
-        // Personnalisation des labels pour l'interface
+    // Liste des champs visibles (champs "Upload" et "OCR" retirés de l'affichage)
+    const champs = ["numero_affichage", "lettre_date", "requerant", "parcelle", "section", "commune", "lieu_dit"];
+    
+    // Génération du HTML
+    let html = champs.map(col => {
         let label = col.replace('_', ' ');
         if (col === 'numero_affichage') label = "N° Affichage";
         if (col === 'lettre_date') label = "Date Lettre";
-        if (col === 'validated_at') label = "Upload (Date de validation)";
 
-        // Gestion spéciale pour la commune (datalist existante)
         if (col === 'commune') {
             return `
                 <div class="mb-3">
@@ -152,13 +149,17 @@ const champs = ["numero_affichage", "lettre_date", "validated_at", "requerant", 
                 </div>`;
         }
         
-        // Champs standard
         return `
             <div class="mb-3">
                 <label class="block text-xs font-bold uppercase">${label}</label>
                 <input type="text" name="${col}" value="${doc[col] || ''}" class="w-full p-2 border rounded shadow-sm">
             </div>`;
     }).join('');
+
+    // AJOUT : Ajout du champ caché pour conserver l'extraction_ocr lors de la soumission
+    html += `<input type="hidden" name="extraction_ocr" value="${doc.extraction_ocr || ''}">`;
+
+    document.getElementById('fieldsContainer').innerHTML = html;
 }
 
 function retourTableau() {

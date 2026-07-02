@@ -1,47 +1,34 @@
--- Création de la base de données
-CREATE DATABASE affichage_ocr_db;
-
--- Se connecter à la base de données (si vous utilisez psql, utilisez \c affichage_ocr_db)
-
--- 1. Création de la table 'documents'
-CREATE TABLE documents (
-    id SERIAL PRIMARY KEY,
-    filename CHARACTER VARYING(255),
-    filepath CHARACTER VARYING(512),
-    raw_text TEXT,
-    status CHARACTER VARYING(50),
-    uploaded_by CHARACTER VARYING(255),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- 2. Création de la table 'users'
+-- Table des utilisateurs
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    username CHARACTER VARYING(50) UNIQUE,
-    password_hash CHARACTER VARYING(255),
-    role CHARACTER VARYING(20),
-    is_active BOOLEAN DEFAULT TRUE
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'correcteur',
+    is_active BOOLEAN DEFAULT true
 );
 
--- 3. Création de la table 'affichage_data' (adaptée selon vos besoins)
+-- Table des documents (fichiers uploadés)
+CREATE TABLE documents (
+    id SERIAL PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    uploaded_by VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des données d'affichage (résultats OCR)
 CREATE TABLE affichage_data (
     id SERIAL PRIMARY KEY,
-    document_id INTEGER REFERENCES documents(id),
-    
-    -- Colonnes personnalisées
-    lettre_date CHARACTER VARYING(100),
-    requerant TEXT,
-    parcelle TEXT,
-    section TEXT,
-    commune TEXT,
-    lieu_dit TEXT,
-    
-    -- Colonnes héritées conservées (adaptées au contexte)
+    document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
+    numero_affichage VARCHAR(100),
+    lettre_date VARCHAR(50),
+    requerant VARCHAR(255),
+    parcelle VARCHAR(100),
+    section VARCHAR(100),
+    commune VARCHAR(100),
+    lieu_dit VARCHAR(255),
     extraction_ocr TEXT,
-    statut CHARACTER VARYING(20),
-    valide_par CHARACTER VARYING(100),
-    validated_at TIMESTAMP WITHOUT TIME ZONE,
-    
-    -- Clé étrangère vers l'utilisateur (le validateur)
-    utilisateur CHARACTER VARYING(255) REFERENCES users(username)
+    statut VARCHAR(50) DEFAULT 'en attente',
+    valide_par VARCHAR(100),
+    validated_at TIMESTAMP,
+    upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
