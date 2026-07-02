@@ -99,26 +99,24 @@ async def upload_multiple(files: List[UploadFile] = File(...), current_user: dic
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # Insertion document : on utilise 'username' (str) et non 'current_user' (dict)
+        # Insertion document
         doc_id = db.execute(text("INSERT INTO documents (filename, uploaded_by) VALUES (:fn, :u) RETURNING id"), 
-                           {"fn": file.filename, "u": username}).scalar()
+                            {"fn": file.filename, "u": username}).scalar()
         db.commit()
         
         # OCR
         extracted_data = affiner_extraction(str(file_path))
         if "error" in extracted_data:
-            # Gérer l'erreur (ex: loguer ou arrêter le traitement du fichier)
+            # Gérer l'erreur
             raise HTTPException(status_code=500, detail=extracted_data["error"])
         
-        # Insertion dans affichage_data
-        # --- Dans upload_multiple ---
-        # Insertion dans affichage_data (remplace l'ancienne insertion)
+        # Insertion dans affichage_data avec le statut 'en attente'
         db.execute(text("""
             INSERT INTO affichage_data (
                 document_id, lettre_date, requerant, parcelle, section, 
-                commune, lieu_dit, extraction_ocr
+                commune, lieu_dit, extraction_ocr, statut
             )
-            VALUES (:did, :ld, :r, :p, :s, :c, :ldt, :raw)
+            VALUES (:did, :ld, :r, :p, :s, :c, :ldt, :raw, 'en attente')
         """), {
             "did": doc_id,
             "ld": safe_truncate(extracted_data.get("lettre_date")),
@@ -130,12 +128,13 @@ async def upload_multiple(files: List[UploadFile] = File(...), current_user: dic
             "raw": extracted_data.get("extraction_ocr")
         })
         db.commit()
+        
     return {"message": "Upload et OCR terminés"}
 
 # --- VALIDER DOCUMENT ---
 @router.post("/valider-document/{caso_id}")
 async def valider_document(
-    #caso_id: int, 
+    caso_id: int, 
     numero_affichage: str = Form(None),
     lettre_date: str = Form(None),
     validated_at: str = Form(None),
