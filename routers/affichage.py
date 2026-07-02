@@ -177,7 +177,6 @@ async def valider_document(
     caso_id: int, 
     numero_affichage: str = Form(None),
     lettre_date: str = Form(None),
-    validated_at: str = Form(None),
     requerant: str = Form(None),
     parcelle: str = Form(None),
     section: str = Form(None),
@@ -187,15 +186,20 @@ async def valider_document(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    # Sécurité (comparaison en minuscule)
+    # 1. Vérification de l'existence
     doc_result = db.execute(text("SELECT statut FROM affichage_data WHERE id = :id"), {"id": caso_id}).fetchone()
     if not doc_result:
         raise HTTPException(status_code=404, detail="Document non trouvé")
     
+    # 2. Sécurité (comparaison en minuscule)
     if doc_result[0] == 'valide' and current_user.get("role", "").lower() != "admin":
         raise HTTPException(status_code=403, detail="Accès refusé.")
 
     try:
+        # Génération de l'heure actuelle côté serveur (format HH:MM:SS)
+        # Modifiez cette ligne dans votre fonction valider_document
+        heure_validation = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
         db.execute(text("""
             UPDATE affichage_data 
             SET numero_affichage = :na, lettre_date = :ld, validated_at = :vat,
@@ -203,9 +207,17 @@ async def valider_document(
                 lieu_dit = :ldt, extraction_ocr = :raw, statut = 'valide', valide_par = :vp
             WHERE id = :id
         """), {
-            "id": caso_id, "na": numero_affichage, "ld": lettre_date, "vat": validated_at,
-            "r": requerant, "p": parcelle, "s": section, "c": commune,
-            "ldt": lieu_dit, "raw": extraction_ocr, "vp": current_user.get("sub")
+            "id": caso_id, 
+            "na": numero_affichage, 
+            "ld": lettre_date, 
+            "vat": heure_validation, # Utilise l'heure générée ci-dessus
+            "r": requerant, 
+            "p": parcelle, 
+            "s": section, 
+            "c": commune,
+            "ldt": lieu_dit, 
+            "raw": extraction_ocr, 
+            "vp": current_user.get("sub")
         })
         db.commit() 
         return {"message": "Succès"}
