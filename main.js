@@ -134,8 +134,8 @@ function editerDoc(id) {
     
     // Configuration des champs pour l'édition
     // Note : assurez-vous que cette liste contient toutes les colonnes éditables
-    const champs = ["numero_affichage", "lettre_date", "validated_at", "requerant", "parcelle", "section", "commune", "lieu_dit"];
 
+const champs = ["numero_affichage", "lettre_date", "validated_at", "requerant", "parcelle", "section", "commune", "lieu_dit", "extraction_ocr"];
     document.getElementById('fieldsContainer').innerHTML = champs.map(col => {
         // Personnalisation des labels pour l'interface
         let label = col.replace('_', ' ');

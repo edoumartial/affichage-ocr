@@ -132,77 +132,47 @@ async def upload_multiple(files: List[UploadFile] = File(...), current_user: dic
         db.commit()
     return {"message": "Upload et OCR terminés"}
 
-
 # --- VALIDER DOCUMENT ---
 @router.post("/valider-document/{caso_id}")
 async def valider_document(
-    caso_id: int, 
-    numero_affichage: str = Form(...),  # Correspond au champ "N° Affichage"
-    lettre_date: str = Form(...),       # Correspond au champ "Date Lettre"
-    validated_at: str = Form(...),      # Correspond au champ "Upload" de l'interface
-    requerant: str = Form(...),
-    parcelle: str = Form(...),
-    section: str = Form(...),
-    commune: str = Form(...),
-    lieu_dit: str = Form(...),
-    extraction_ocr: str = Form(...),
+    #caso_id: int, 
+    numero_affichage: str = Form(None),
+    lettre_date: str = Form(None),
+    validated_at: str = Form(None),
+    requerant: str = Form(None),
+    parcelle: str = Form(None),
+    section: str = Form(None),
+    commune: str = Form(None),
+    lieu_dit: str = Form(None),
+    extraction_ocr: str = Form(None),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    # 1. Vérification de l'existence du document
-    doc_result = db.execute(
-        text("SELECT statut FROM affichage_data WHERE id = :id"), 
-        {"id": caso_id}
-    ).fetchone()
-
+    # Sécurité (comparaison en minuscule)
+    doc_result = db.execute(text("SELECT statut FROM affichage_data WHERE id = :id"), {"id": caso_id}).fetchone()
     if not doc_result:
         raise HTTPException(status_code=404, detail="Document non trouvé")
     
-    # 2. Règle de sécurité : Seul un admin peut modifier un document déjà validé
-    statut_actuel = doc_result[0]
-    if statut_actuel == 'valide' and current_user.get("role") != "Administrateur":
-        raise HTTPException(
-            status_code=403, 
-            detail="Ce document est déjà validé. Seul un administrateur peut le modifier."
-        )
+    if doc_result[0] == 'valide' and current_user.get("role", "").lower() != "admin":
+        raise HTTPException(status_code=403, detail="Accès refusé.")
 
-    # 3. Mise à jour de la base de données
     try:
         db.execute(text("""
             UPDATE affichage_data 
-            SET numero_affichage = :na,
-                lettre_date = :ld,
-                validated_at = :vat,
-                requerant = :r, 
-                parcelle = :p, 
-                section = :s, 
-                commune = :c, 
-                lieu_dit = :ldt, 
-                extraction_ocr = :raw, 
-                statut = 'valide',
-                valide_par = :vp
+            SET numero_affichage = :na, lettre_date = :ld, validated_at = :vat,
+                requerant = :r, parcelle = :p, section = :s, commune = :c, 
+                lieu_dit = :ldt, extraction_ocr = :raw, statut = 'valide', valide_par = :vp
             WHERE id = :id
         """), {
-            "id": caso_id,
-            "na": numero_affichage,
-            "ld": lettre_date,
-            "vat": validated_at,  # Valeur du champ "Upload"
-            "r": requerant,
-            "p": parcelle,
-            "s": section,
-            "c": commune,
-            "ldt": lieu_dit,
-            "raw": extraction_ocr,
-            "vp": current_user.get("sub")
+            "id": caso_id, "na": numero_affichage, "ld": lettre_date, "vat": validated_at,
+            "r": requerant, "p": parcelle, "s": section, "c": commune,
+            "ldt": lieu_dit, "raw": extraction_ocr, "vp": current_user.get("sub")
         })
-        
         db.commit() 
-        return {"message": "Document validé et enregistré avec succès"}
-        
+        return {"message": "Succès"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour : {str(e)}")
-
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- Dans get_tous_documents ---
 @router.get("/tous-les-documents/")
