@@ -10,6 +10,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from auth import SECRET_KEY, ALGORITHM, verify_password, create_access_token
 import bcrypt
+from datetime import datetime
 
 ##################
 def safe_truncate(text, length=100):
@@ -84,9 +85,48 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         "token_type": "bearer"
     }
 
-# --- UPLOAD MULTIPLE ---
 @router.post("/upload-multiple/")
 async def upload_multiple(files: List[UploadFile] = File(...), current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    UPLOAD_DIR = BASE_DIR / "uploads"
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    
+    username = current_user.get("sub") 
+    
+    for file in files:
+        file_path = UPLOAD_DIR / file.filename
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        doc_id = db.execute(text("INSERT INTO documents (filename, uploaded_by) VALUES (:fn, :u) RETURNING id"), 
+                            {"fn": file.filename, "u": username}).scalar()
+        db.commit()
+        
+        extracted_data = affiner_extraction(str(file_path))
+        if "error" in extracted_data:
+            raise HTTPException(status_code=500, detail=extracted_data["error"])
+        
+        # Insertion avec upload_date
+        db.execute(text("""
+            INSERT INTO affichage_data (
+                document_id, lettre_date, requerant, parcelle, section, 
+                commune, lieu_dit, extraction_ocr, statut, upload_date
+            )
+            VALUES (:did, :ld, :r, :p, :s, :c, :ldt, :raw, 'en attente', :ud)
+        """), {
+            "did": doc_id,
+            "ld": safe_truncate(extracted_data.get("lettre_date")),
+            "r": safe_truncate(extracted_data.get("requerant")),
+            "p": safe_truncate(extracted_data.get("parcelle")),
+            "s": safe_truncate(extracted_data.get("section")),
+            "c": safe_truncate(extracted_data.get("commune")),
+            "ldt": safe_truncate(extracted_data.get("lieu_dit")),
+            "raw": extracted_data.get("extraction_ocr"),
+            "ud": datetime.now() # Ajout de l'heure actuelle
+        })
+        db.commit()
+        
+    return {"message": "Upload et OCR terminés"}
     BASE_DIR = Path(__file__).resolve().parent.parent
     UPLOAD_DIR = BASE_DIR / "uploads"
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
