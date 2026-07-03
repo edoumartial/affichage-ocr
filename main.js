@@ -73,7 +73,10 @@ function afficherTableau(data) {
                 </span>
             </td>
             <td class="p-3">
-                <button onclick="editerDoc(${doc.id})" class="text-blue-600 font-bold hover:underline">Éditer</button>
+                ${(doc.statut !== 'valide' || userRole.toLowerCase().includes('admin')) 
+                    ? `<button onclick="editerDoc(${doc.id})" class="text-blue-600 font-bold hover:underline">Éditer</button>` 
+                    : '<span class="text-gray-400 font-bold">Validé</span>'
+                }
             </td>
         </tr>
     `).join('');
