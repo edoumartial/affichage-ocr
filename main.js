@@ -61,7 +61,7 @@ function afficherTableau(data) {
     tbody.innerHTML = data.map(doc => `
         <tr class="border-b hover:bg-slate-50">
             <td class="p-3">${doc.lettre_date || ''}</td>
-            <td class="p-3">${doc.requerant || ''}</td>
+            <td class="p-3">${doc.numero_affichage || ''}</td> <td class="p-3">${doc.requerant || ''}</td>
             <td class="p-3">${doc.commune || ''}</td>
             <td class="p-3">${doc.parcelle || ''}</td>
             <td class="p-3">${doc.section || ''}</td>
@@ -81,7 +81,6 @@ function afficherTableau(data) {
         </tr>
     `).join('');
 }
-
 
 
 function trierPar(col) {
@@ -135,7 +134,7 @@ function editerDoc(id) {
         if (validateurInput) validateurInput.value = payload.sub;
     } catch (e) { console.error("Erreur de décodage du token", e); }
     
-    // Liste des champs visibles (champs "Upload" et "OCR" retirés de l'affichage)
+    // Liste des champs visibles
     const champs = ["numero_affichage", "lettre_date", "requerant", "parcelle", "section", "commune", "lieu_dit"];
     
     // Génération du HTML
@@ -143,6 +142,22 @@ function editerDoc(id) {
         let label = col.replace('_', ' ');
         if (col === 'numero_affichage') label = "N° Affichage";
         if (col === 'lettre_date') label = "Date Lettre";
+
+        // Traitement spécial pour le N° Affichage (Séparation du suffixe)
+        if (col === 'numero_affichage') {
+            const numeroBrut = doc[col] || '';
+            // On retire le suffixe pour ne garder que la partie modifiable
+            const valeurModifiable = numeroBrut.replace(SUFFIXE_CASO, ''); 
+            
+            return `
+                <div class="mb-3">
+                    <label class="block text-xs font-bold uppercase">${label}</label>
+                    <div class="flex items-center border rounded shadow-sm bg-white overflow-hidden focus-within:ring-1 focus-within:ring-blue-500">
+                        <input type="text" name="${col}" value="${valeurModifiable}" class="w-full p-2 outline-none" placeholder="Ex: 123">
+                        <span class="text-slate-400 text-xs font-mono italic pr-2 select-none">${SUFFIXE_CASO}</span>
+                    </div>
+                </div>`;
+        }
 
         if (col === 'commune') {
             return `
@@ -159,7 +174,7 @@ function editerDoc(id) {
             </div>`;
     }).join('');
 
-    // AJOUT : Ajout du champ caché pour conserver l'extraction_ocr lors de la soumission
+    // Ajout du champ caché
     html += `<input type="hidden" name="extraction_ocr" value="${doc.extraction_ocr || ''}">`;
 
     document.getElementById('fieldsContainer').innerHTML = html;
@@ -174,9 +189,28 @@ function retourTableau() {
 document.getElementById('validationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    // Ajustez ici si vous avez toujours besoin de suffixer le N° CASO
-    const res = await fetch(`${API_URL}/valider-document/${formData.get('caso_id')}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() }, body: formData });
-    if (res.ok) { retourTableau(); await chargerDonnees(); } else alert("Erreur validation");
+    
+    // Récupération de la valeur saisie par l'utilisateur
+    const numSaisi = formData.get('numero_affichage');
+    
+    // Vérification : si le suffixe n'est pas déjà présent, on l'ajoute
+    if (numSaisi && !numSaisi.includes(SUFFIXE_CASO)) {
+        formData.set('numero_affichage', numSaisi + SUFFIXE_CASO);
+    }
+
+    // Envoi des données au serveur
+    const res = await fetch(`${API_URL}/valider-document/${formData.get('caso_id')}`, { 
+        method: 'POST', 
+        headers: { 'Authorization': 'Bearer ' + getToken() }, 
+        body: formData 
+    });
+
+    if (res.ok) { 
+        retourTableau(); 
+        await chargerDonnees(); 
+    } else { 
+        alert("Erreur lors de la validation"); 
+    }
 });
 
 function ouvrirVueUsers() {
