@@ -48,10 +48,23 @@ async function chargerDonnees() {
     } catch(e) { console.error(e); }
 }
 
+
+
 function majStats() {
+    // 1. Mise à jour du total
     document.getElementById('statTotal').innerText = tousLesDocs.length;
-    document.getElementById('statAttente').innerText = tousLesDocs.filter(d => d.statut === 'en_attente').length;
-    document.getElementById('statValide').innerText = tousLesDocs.filter(d => d.statut === 'valide').length;
+    
+    // 2. Mise à jour des dossiers "en attente" 
+    // On utilise .trim() pour ignorer les espaces inutiles, 
+    // et on vérifie 'en attente' au lieu de 'en_attente'
+    document.getElementById('statAttente').innerText = tousLesDocs.filter(d => 
+        d.statut && d.statut.trim().toLowerCase() === 'en attente'
+    ).length;
+    
+    // 3. Mise à jour des dossiers "valides"
+    document.getElementById('statValide').innerText = tousLesDocs.filter(d => 
+        d.statut && d.statut.trim().toLowerCase() === 'valide'
+    ).length;
 }
 
 
