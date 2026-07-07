@@ -12,3 +12,5 @@ test_extraction.py
 sandbox.ipynb
 uploads/
 *.pdf
+
+*.docx

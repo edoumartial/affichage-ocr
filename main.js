@@ -71,10 +71,16 @@ function majStats() {
 // Dans main.js
 function afficherTableau(data) {
     const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = data.map(doc => `
+    tbody.innerHTML = data.map(doc => {
+        // Logique pour afficher le numéro complet
+        // Si le champ existe, on l'utilise, sinon on affiche vide
+        const displayNum = doc.numero_affichage || '';
+
+        return `
         <tr class="border-b hover:bg-slate-50">
             <td class="p-3">${doc.lettre_date || ''}</td>
-            <td class="p-3">${doc.numero_affichage || ''}</td> <td class="p-3">${doc.requerant || ''}</td>
+            <td class="p-3 font-mono text-slate-600">${displayNum}</td> 
+            <td class="p-3">${doc.requerant || ''}</td>
             <td class="p-3">${doc.commune || ''}</td>
             <td class="p-3">${doc.parcelle || ''}</td>
             <td class="p-3">${doc.section || ''}</td>
@@ -91,8 +97,8 @@ function afficherTableau(data) {
                     : '<span class="text-gray-400 font-bold">Validé</span>'
                 }
             </td>
-        </tr>
-    `).join('');
+        </tr>`;
+    }).join('');
 }
 
 

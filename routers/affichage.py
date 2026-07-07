@@ -235,11 +235,12 @@ async def get_tous_documents(
     Récupère la liste de tous les documents avec leurs données d'affichage associées.
     """
     try:
-        # Exécution de la requête SQL pour joindre les tables documents et affichage_data
+        # Ajout de c.numero_affichage dans la requête SELECT
         result = db.execute(text("""
             SELECT 
                 c.id AS id, 
                 d.filename, 
+                c.numero_affichage, 
                 c.lettre_date, 
                 c.requerant, 
                 c.parcelle, 
@@ -255,11 +256,9 @@ async def get_tous_documents(
         """))
         
         # Transformation des résultats en une liste de dictionnaires
-        # row._mapping permet d'accéder aux colonnes par leur nom
         documents = [dict(row._mapping) for row in result]
         
-        # Conversion optionnelle des objets datetime en chaînes de caractères 
-        # pour éviter les erreurs de sérialisation JSON
+        # Conversion des objets datetime en chaînes de caractères
         for doc in documents:
             if doc.get("created_at"):
                 doc["created_at"] = doc["created_at"].isoformat()
@@ -267,11 +266,11 @@ async def get_tous_documents(
         return documents
         
     except Exception as e:
-        # Gestion des erreurs de base de données
         raise HTTPException(
             status_code=500, 
             detail=f"Erreur lors de la récupération des documents : {str(e)}"
         )
+
 
 # --- CRUD USERS ---
 
